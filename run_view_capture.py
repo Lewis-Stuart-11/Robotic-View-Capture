@@ -3,6 +3,7 @@
 import time
 import geometry_msgs
 import json
+import os
 
 from trajectory_handler import TrajectoryHandler
 from robot_control import RobotControl
@@ -97,19 +98,21 @@ def config_parser():
 
     # Config Handling
     parser.add_argument("--config", is_config_file=True, help="Config file path")
-    parser.add_argument("--log_dir", type=str, help="Log file path")
+    parser.add_argument("--log_dir", type=str, default="", help="Log file path")
+    parser.add_argument("--progress_dir", type=str, default="progress.txt", help="Save progress file path")
     parser.add_argument("--experiment_name", type=str, help="Name of this experiment iteration")
     parser.add_argument("--print", action="store_true", default=False, help="Print useful info to stdout")
     parser.add_argument("--visualise", action="store_true", default=False, help="Generate scatter diagrams of positions")
+    parser.add_argument("--save_fig", action="store_true", default=False, help="Whether to save the generated visualisation")
     
     # Scene Objects
-    parser.add_argument("--main_obj_position", type=float, action="append", default=[0.0, 0.0, 50],
+    parser.add_argument("--main_obj_position", type=float, action="append", default=[], required=True,
                         help="The object position in relation to the base position (cm)")
-    parser.add_argument("--main_obj_radius", type=float, default=25.5,
+    parser.add_argument("--main_obj_radius", type=float, required=True,
                         help="The known radius of the object (cm)")
-    parser.add_argument("--starting_position", type=float, action="append", default=[68, 0.0, 26],
+    parser.add_argument("--starting_position", type=float, action="append", default=[], required=True,
                         help="The object starting position in relation to the base position (cm)")
-    parser.add_argument("--camera_size", type=float, action="append", default=[6, 6, 3],
+    parser.add_argument("--camera_size", type=float, action="append", default=[], required=True,
                         help="Size of the camera in: width, depth, height (cm)")
 
     parser.add_argument("--include_extra_obj", action="store_true", default=False,
@@ -121,10 +124,12 @@ def config_parser():
                          help="The number of rings in the generated sphere of capture views")
     parser.add_argument("--sectors", type=int, default=14, 
                          help="The number of sectors in the generated sphere of capture views")
-    parser.add_argument("--camera_dist_from_obj_origin", type=float, default=42.5,
+    parser.add_argument("--camera_dist_from_obj_origin", type=float, required=True,
                         help="The distance of the camera to the origin when calculating views (cm)")
 
     # Movement Handling
+    parser.add_argument("--planning_time", type=float, default=5.0, 
+                         help="Number of seconds per planning attempt")
     parser.add_argument("--num_move_attempts", type=int, default=3, 
                          help="Number of move attempts before moving to next position in queue")
     parser.add_argument("--retry_failed_pos", action="store_true", default=False,
@@ -185,9 +190,12 @@ def main():
     # Handles all vectors and quaronian logic for the robot
     quartonian_handler = QuartonianHandler()
 
+    experiment_file_name = os.path.join(args.log_dir, args.experiment_name.replace(" ", "_").lower())
+
     # Handles all positions that the robot needs to traverse to  
     trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
-                                           args.max_dist, args.restricted_z)
+                                           args.max_dist, args.restricted_z, 
+                                           save_directory=experiment_file_name)
 
     # Calculates all camera view positions in the scene based on where the object is and the number
     # of required views to be captured
@@ -199,7 +207,7 @@ def main():
 
     # Shows a scatter diagram of the calculated valid and invalid positions in the scene
     if args.visualise:
-        trajectory_handler.visualise_predicted_valid_points()
+        trajectory_handler.visualise_predicted_valid_points(save=args.save_fig)
 
     print "Enter anything to continue: "
 
@@ -208,19 +216,24 @@ def main():
     if continue_process == "exit":
         exit()
 
+    robot.set_planning_time(args.planning_time)
+
     # Attempts to moves arm to the set starting position
     success = robot.move_arm(scene_obj_positions["start"].x, 
                              scene_obj_positions["start"].y, 
                              scene_obj_positions["start"].z)
 
+    #robot.move_group.set_planner_id("RRTConnectkConfigDefault")
+
     if success:
-        print "Moved robot to starting position, beginning capturing..."
+        print "Moved robot to starting position, adding scene objects"
     else:
         raise Exception("Failed to move robot to starting position")
-        exit()
 
     # Generates all the required objects in the scene to ensure no collisions occur
     generate_objects(robot, args, scene_obj_positions)
+
+    print "Beginning capturing..."
 
     # Gets the current position for the robot to traverse to and continues to loop until no more 
     # positions in the queue
@@ -284,11 +297,10 @@ def main():
 
             current_pos_idx, current_pos = trajectory_handler.get_failed_pos()
 
-
     trajectory_handler.save_positions()
 
     if args.visualise:
-        trajectory_handler.visualise_traversed_points()
+        trajectory_handler.visualise_traversed_points(save=args.save_fig)
 
 if __name__ == '__main__':
   main()

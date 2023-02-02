@@ -6,7 +6,7 @@ import geometry_msgs.msg
 import os
 
 class TrajectoryHandler(object):
-    def __init__(self, X_OFFSET, Y_OFFSET, MAX_DIST, MIN_Z, save_directory=""):
+    def __init__(self, X_OFFSET, Y_OFFSET, MAX_DIST, MIN_Z, save_directory="", experiment_name=""):
         self.all_positions = []
 
         self.predicted_positions = {"valid_positions": {}, "invalid_positions": {}}
@@ -23,6 +23,7 @@ class TrajectoryHandler(object):
         self.current_failed_point_idx = 0
 
         self.save_directory = save_directory
+        self.experiment_name = experiment_name
 
     def calculate_sphere_points(self, sphere_origin, radius, rings=10, sectors=20, swap_y=True, half_sphere=False, cut_off=0.3):
         ring_d = 1.0/(rings)
@@ -75,13 +76,13 @@ class TrajectoryHandler(object):
         else:
             self.predicted_positions["invalid_positions"][len(self.all_positions)-1] = new_point
 
-    def visualise_predicted_valid_points(self):
-        self.visualise_points(self.predicted_positions)
+    def visualise_predicted_valid_points(self, save=False):
+        self.visualise_points(self.predicted_positions, save=save, predicted_points=True)
 
-    def visualise_traversed_points(self):
-        self.visualise_points(self.traversed_positions)
+    def visualise_traversed_points(self, save=False):
+        self.visualise_points(self.traversed_positions, save=save)
 
-    def visualise_points(self, positions, show_order=True):
+    def visualise_points(self, positions, show_order=True, save=False, predicted_points=False):
         
         visualisation = {"valid_positions": {"colour": "b", "marker": "^"},
                          "invalid_positions": {"colour": "r", "marker": "o"}}
@@ -98,6 +99,11 @@ class TrajectoryHandler(object):
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
         ax.set_zlabel("Z")
+
+        if save:
+            save_fig_file = self.save_directory 
+            save_fig_file+= "_predicted_points" if predicted_points else "_traversed_points"
+            plt.savefig(save_fig_file)
 
         plt.show()
 
@@ -135,7 +141,7 @@ class TrajectoryHandler(object):
             self.traversed_positions["invalid_positions"][current_pos_idx] = current_pos
 
     def save_positions(self):
-        with open("positions.txt", "w") as positions_file:
+        with open(self.save_directory+"_points.txt", "w") as positions_file:
             positions_file.write("All Positions:\n")
             for idx, position in enumerate(self.all_positions):
                 positions_file.write(str(idx) + ": " + str(position.x) + " " + str(position.y) + " " + str(position.z) + "\n")

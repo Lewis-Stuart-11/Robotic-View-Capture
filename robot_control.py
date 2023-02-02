@@ -4,10 +4,10 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs
-import time
 
 class RobotControl(object):
-    def __init__(self, num_move_attempts = 3):
+    def __init__(self, num_move_attempts = 3, attachment_name="tool0",
+                        wait_time=1):
         super(RobotControl, self).__init__()
 
         moveit_commander.roscpp_initialize(sys.argv)
@@ -19,7 +19,6 @@ class RobotControl(object):
 
         group_name = "manipulator"
         move_group = moveit_commander.MoveGroupCommander(group_name)
-
 
         display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                     moveit_msgs.msg.DisplayTrajectory,
@@ -33,16 +32,11 @@ class RobotControl(object):
         self.scene = scene
         self.robot = robot
 
-        self.attachment_name = "tool0"
-
+        self.attachment_name = attachment_name
         self.num_move_attempts = num_move_attempts
+        self.wait_time = wait_time
 
-        rospy.sleep(2)
-
-    """
-    for method_name in dir(self.move_group):
-            if callable(getattr(self.move_group, method_name)):
-                print method_name"""
+        rospy.sleep(wait_time)
 
     def get_is_ros_active(self):
         return rospy.is_shutdown()
@@ -55,6 +49,9 @@ class RobotControl(object):
 
     def get_current_rpy(self):
         return self.move_group.get_current_rpy()
+
+    def set_planning_time(self, planning_time):
+        self.move_group.set_planning_time(planning_time)
 
     def move_arm(self, point_x, point_y, point_z, reset_orientation=True):
         pose = geometry_msgs.msg.Pose()
@@ -70,22 +67,7 @@ class RobotControl(object):
 
             pose.orientation.w = 1.0
     
-        for i in range(self.num_move_attempts):
-
-            self.move_group.set_pose_target(pose)
-
-            success = self.move_group.go(wait=True)
-
-            self.move_group.stop()
-
-            self.move_group.clear_pose_targets()
-
-            if success:
-                break
-            
-            time.sleep(0.5)
-
-        return success
+        return self.execute_new_pose(pose)
 
 
     def reorient_arm(self, rotate_x, rotate_y, rotate_z, rotate_w):
@@ -99,22 +81,10 @@ class RobotControl(object):
 
         pose.orientation.w = rotate_w
 
-        for i in range(self.num_move_attempts):
+        return self.execute_new_pose(pose)
 
-            self.move_group.set_pose_target(pose)
-
-            success = self.move_group.go(wait=True)
-
-            self.move_group.stop()
-
-            self.move_group.clear_pose_targets()
-
-            if success:
-                break
-
-        return success
-
-    def move_and_orientate_arm(self, point_x, point_y, point_z, rotate_x, rotate_y, rotate_z, rotate_w):
+    def move_and_orientate_arm(self, point_x, point_y, point_z, rotate_x, 
+                                     rotate_y, rotate_z, rotate_w):
         pose = geometry_msgs.msg.Pose()
 
         pose.position.x = point_x * self.global_scale
@@ -127,20 +97,25 @@ class RobotControl(object):
 
         pose.orientation.w = rotate_w
 
-        for i in range(self.num_move_attempts):
+        return self.execute_new_pose(pose)
 
+    def execute_new_pose(self, pose):
+
+        for i in range(self.num_move_attempts):
             self.move_group.set_pose_target(pose)
 
             success = self.move_group.go(wait=True)
+
+            rospy.sleep(self.wait_time)
 
             self.move_group.stop()
 
             self.move_group.clear_pose_targets()
 
             if success:
-                break
+                return True
 
-        return success
+        return False
 
     def add_relative_pose(self, point_x=0, point_y=0, point_z=0):
         current_pose = self.move_group.get_current_pose().pose
@@ -153,7 +128,6 @@ class RobotControl(object):
 
 
     def add_pose(self, point_x, point_y, point_z):
-        
         new_pose = geometry_msgs.msg.Pose()
         
         new_pose.position.x = point_x * self.global_scale 
@@ -200,7 +174,6 @@ class RobotControl(object):
         return False
 
     def add_box_to_scene(self, obj_name, obj_position, obj_size, attach=False):
-        rospy.sleep(2)
 
         obj_pose = geometry_msgs.msg.PoseStamped()
         obj_pose.header.frame_id = self.robot.get_planning_frame()
@@ -214,7 +187,7 @@ class RobotControl(object):
         #if not success:
         #    raise Exception("Could not add object " + obj_name + " to scene")
 
-        rospy.sleep(1)
+        rospy.sleep(self.wait_time)
 
         if attach:
             touch_links = self.robot.get_link_names()
@@ -230,7 +203,7 @@ class RobotControl(object):
 
         self.scene.add_sphere(obj_name, obj_pose, radius=obj_radius)
 
-        rospy.sleep(1)
+        rospy.sleep(self.wait_time)
 
         if attach:
             touch_links = self.robot.get_link_names()
@@ -244,12 +217,11 @@ class RobotControl(object):
 
         self.scene.add_mesh(obj_name, obj_position, mesh_file_name, size=obj_size)
 
-        rospy.sleep(1)
+        rospy.sleep(self.wait_time)
 
         if attach:
             touch_links = self.robot.get_link_names()
             self.scene.attach_box(self.attachment_name, obj_name, touch_links=touch_links)
-
 
     def remove_object_from_scene(self, obj_name):
         self.scene.remove_world_object(obj_name)
