@@ -8,6 +8,7 @@ import os
 from trajectory_handler import TrajectoryHandler
 from robot_control import RobotControl
 from quartonian_handler import QuartonianHandler
+from db_handler import ImgCaptureDatabaseHandler
 
 dc_to_wc = None
 wc_to_dc = None
@@ -34,6 +35,7 @@ def convert_list_to_point(point_list, convert_coords=False):
 def take_snapshot(current_pos_idx):
     time.sleep(1.0)
 
+"""
 def move_robot_base(new_base_pos, current_base_pos):
     success = True
 
@@ -60,13 +62,23 @@ def calculate_new_base_position(pos_to_move_base, current_base_pos, radius_from_
             print "Failed to move base to position: " + current_base_pos.x + ", " + current_base_pos.y + ", " + current_base_pos.z
 
     return current_base_pos
-
+"""
 
 def generate_objects(robot, args, scene_obj_positions):
 
     robot.add_sphere_to_scene("plant", scene_obj_positions["main_obj"], args.main_obj_radius, attach=False)
 
     robot.add_box_to_scene("camera", scene_obj_positions["start"], args.camera_size, attach=True)
+
+    if args.auto_add_obj_stand:
+        stand_height = scene_obj_positions["main_obj"].z - args.main_obj_radius
+
+        stand_position = scene_obj_positions["main_obj"]
+        stand_position.z = stand_height/2
+
+        stand_size = [0.3, 0.3, stand_height]
+
+        robot.add_box_to_scene("stand", stand_position, stand_size, attach=False)
 
     if args.include_extra_obj:
         with open(args.scene_objs, "r") as scene_file:
@@ -99,12 +111,18 @@ def config_parser():
     # Config Handling
     parser.add_argument("--config", is_config_file=True, help="Config file path")
     parser.add_argument("--log_dir", type=str, default="", help="Log file path")
-    parser.add_argument("--progress_dir", type=str, default="progress.txt", help="Save progress file path")
-    parser.add_argument("--experiment_name", type=str, help="Name of this experiment iteration")
+    parser.add_argument("--experiment_name", type=str, required=True, help="Name of this experiment iteration")
     parser.add_argument("--print", action="store_true", default=False, help="Print useful info to stdout")
     parser.add_argument("--visualise", action="store_true", default=False, help="Generate scatter diagrams of positions")
     parser.add_argument("--save_fig", action="store_true", default=False, help="Whether to save the generated visualisation")
     
+    # Database Handling
+    parser.add_argument("--save_to_db", action="store_true", default=True, help="Whether to save experiment to database")
+    parser.add_argument("--continue_experiment", action="store_true", default=False, 
+                        help="Whether to continue training an experiment if the name already exists in the database")
+    parser.add_argument("--replace_stored_experiment", action="store_true", default=False, 
+                        help="Whether to replace the stored experiment or increment the current experiment name")
+
     # Scene Objects
     parser.add_argument("--main_obj_position", type=float, action="append", default=[], required=True,
                         help="The object position in relation to the base position (cm)")
@@ -114,7 +132,9 @@ def config_parser():
                         help="The object starting position in relation to the base position (cm)")
     parser.add_argument("--camera_size", type=float, action="append", default=[], required=True,
                         help="Size of the camera in: width, depth, height (cm)")
-
+    
+    parser.add_argument("--auto_add_obj_stand", action="store_true", default=False,
+                        help="Automatically adds the object stand based on its starting position")
     parser.add_argument("--include_extra_obj", action="store_true", default=False,
                         help="Set to allow extra objects to be added from json object file")
     parser.add_argument("--scene_objs", type=str, default="", help="Object JSON file path")
@@ -128,9 +148,9 @@ def config_parser():
                         help="The distance of the camera to the origin when calculating views (cm)")
 
     # Movement Handling
-    parser.add_argument("--planning_time", type=float, default=5.0, 
+    parser.add_argument("--planning_time", type=float, default=3.0, 
                          help="Number of seconds per planning attempt")
-    parser.add_argument("--num_move_attempts", type=int, default=3, 
+    parser.add_argument("--num_move_attempts", type=int, default=2, 
                          help="Number of move attempts before moving to next position in queue")
     parser.add_argument("--retry_failed_pos", action="store_true", default=False,
                          help="Set to attempt to move to previously failed positions")
@@ -180,17 +200,50 @@ def config_parser():
     return args, scene_obj_positions
 
 
+def save_experiment_in_db(args, db_handler, experiment_name):
+    if db_handler.get_experiment_with_name(experiment_name):
+        if not args.continue_experiment:
+            if not args.replace_stored_experiment:
+                db_name_i = 1
+                experiment_name += "_" + str(db_name_i)
+
+                while db_handler.get_experiment_with_name(experiment_name):
+                    experiment_name = experiment_name[:-1]
+                    experiment_name += str(db_name_i)
+                    db_name_i+= 1
+            else:
+                db_handler.remove_experiment_with_name(experiment_name)
+
+            db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
+                                            args.camera_dist_from_obj_origin, args.rings, args.sectors)
+    else:
+        db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
+                                            args.camera_dist_from_obj_origin, args.rings, args.sectors)
+
+    return db_handler
+
+
 def main():
 
     args, scene_obj_positions = config_parser()
+
+    experiment_name_condensed = args.experiment_name.replace(" ", "_").lower()
+
+    experiment_file_name = os.path.join(args.log_dir, experiment_name_condensed)
+
+    db_handler = None
+
+    if args.save_to_db:
+
+        db_handler = ImgCaptureDatabaseHandler(args.log_dir)
+
+        db_handler = save_experiment_in_db(args, db_handler, experiment_name_condensed)
 
     # Handles all control of the UR5 and Scene
     robot = RobotControl(num_move_attempts=args.num_move_attempts)
 
     # Handles all vectors and quaronian logic for the robot
     quartonian_handler = QuartonianHandler()
-
-    experiment_file_name = os.path.join(args.log_dir, args.experiment_name.replace(" ", "_").lower())
 
     # Handles all positions that the robot needs to traverse to  
     trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
@@ -241,12 +294,22 @@ def main():
     while current_pos != None:
         print str(current_pos_idx)
 
-        if args.dynamic_base:
+        if args.save_to_db and args.continue_experiment:
+            current_point = db_handler.get_point_with_num(current_pos_idx)
+
+            if current_point is not None and current_point[2] and current_point[3]:
+                print "Point has already been traveresed previously, skipping..."
+
+                current_pos_idx, current_pos = trajectory_handler.get_next_pos()
+
+                continue
+
+        """if args.dynamic_base:
             
             scene_obj_positions["current_base"] = calculate_new_base_position(current_pos, 
                                                            scene_obj_positions["current_base"], 
                                                            args.camera_dist_from_obj_origin, 
-                                                           quartonian_handler)
+                                                           quartonian_handler)"""
 
         print "Attempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z)
 
@@ -259,9 +322,13 @@ def main():
             print "Successfully moved arm to new position"
             take_snapshot(current_pos_idx)
             print "Snapshot taken"
+                
         else:
             print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
         
+        if args.save_to_db:
+            db_handler.update_point_status(current_pos_idx, success)
+
         print ""
 
         trajectory_handler.pos_verdict(current_pos_idx, success)
@@ -290,12 +357,17 @@ def main():
                 print "Snapshot taken"
 
                 trajectory_handler.pos_verdict(current_pos_idx, success)
+
+                if args.save_to_db:
+                    db_handler.update_point_status(current_pos_idx, success)
             else:
                 print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
 
             print ""
 
             current_pos_idx, current_pos = trajectory_handler.get_failed_pos()
+
+    db_handler.close_database()
 
     trajectory_handler.save_positions()
 
