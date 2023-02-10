@@ -76,7 +76,7 @@ def generate_objects(robot, args, scene_obj_positions):
         stand_position = scene_obj_positions["main_obj"]
         stand_position.z = stand_height/2
 
-        stand_size = [0.3, 0.3, stand_height]
+        stand_size = [0.07, 0.07, stand_height]
 
         robot.add_box_to_scene("stand", stand_position, stand_size, attach=False)
 
@@ -101,6 +101,25 @@ def generate_objects(robot, args, scene_obj_positions):
                                             attach=True if "attach" in object.keys() else False)
                 else:
                     raise Exception("Object type " + object["type"] + " is not currently supported")
+
+
+def test(robot, quartonian_handler):
+    origin = convert_list_to_point([0.705882352941, 0.0, 1.0])
+
+    test_poses = [
+        convert_list_to_point([0.5,0.5,1]),
+        convert_list_to_point([-0.5,0.5,1]),
+        convert_list_to_point([-0.5,-0.5,1]),
+        convert_list_to_point([0.5,-0.5,1])
+    ]
+
+    for pose in test_poses:
+        quartonian = quartonian_handler.QuaternionLookRotation(quartonian_handler.SubtractVectors(origin, pose), up)
+
+        success = robot.move_and_orientate_arm(pose.x, pose.y, pose.z,
+                                                quartonian.x, quartonian.y, quartonian.z, quartonian.w)
+        
+        time.sleep(4)
 
 
 def config_parser():
@@ -244,7 +263,7 @@ def main():
 
     # Handles all vectors and quaronian logic for the robot
     quartonian_handler = QuartonianHandler()
-
+    
     # Handles all positions that the robot needs to traverse to  
     trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
                                            args.max_dist, args.restricted_z, 
