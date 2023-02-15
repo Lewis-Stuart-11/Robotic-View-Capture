@@ -25,7 +25,7 @@ class TrajectoryHandler(object):
         self.save_directory = save_directory
         self.experiment_name = experiment_name
 
-    def calculate_sphere_points(self, sphere_origin, radius, rings=10, sectors=20, swap_y=True, half_sphere=False, cut_off=0.3):
+    def calculate_sphere_points(self, sphere_origin, radius, rings=10, sectors=20, cut_off=0.3):
         ring_d = 1.0/(rings)
         sect_d = 1.0/(sectors)
 
@@ -35,36 +35,27 @@ class TrajectoryHandler(object):
             for ring in range(1, rings+1):
 
                 x = cos(2 * pi * sect * sect_d) 
-                z = sin(2 * pi * sect * sect_d) 
+                y = sin(2 * pi * sect * sect_d) 
                 
-                if half_sphere:
-                    x *= sin(pi * ring * (ring_d/2))
-                    z *= sin(pi * ring * (ring_d/2))
-                else:
-                    x *= sin(pi * ring * ring_d)
-                    z *= sin(pi * ring * ring_d)
+                x *= sin(pi * ring * ring_d)
+                y *= sin(pi * ring * ring_d)
 
-                y = sin(-(pi/2) + (pi * ring * ring_d))
+                z = -sin(-(pi/2) + (pi * ring * ring_d))
 
-                self.add_and_validate_point(x, y, z, sphere_origin, radius, swap_y=swap_y)
+                self.add_and_validate_point(x, y, z, sphere_origin, radius)
 
-        self.add_and_validate_point(0, -1, 0, sphere_origin, radius, swap_y=swap_y)
+        self.add_and_validate_point(0, 0, 1, sphere_origin, radius)
         
 
-    def add_and_validate_point(self, x, y, z, sphere_origin, radius, swap_y=True):
+    def add_and_validate_point(self, x, y, z, sphere_origin, radius):
         # type: (float, float, float, list, float, bool)
 
         new_point = geometry_msgs.msg.Point()
 
         new_point.x = x * radius
-
-        if swap_y:
-            new_point.y = z * radius
-            new_point.z = y * radius
-        else:
-            new_point.y = y * radius
-            new_point.z = z * radius
-
+        new_point.y = y * radius
+        new_point.z = z * radius
+        
         new_point.x += sphere_origin.x
         new_point.y += sphere_origin.y
         new_point.z += sphere_origin.z
@@ -100,10 +91,15 @@ class TrajectoryHandler(object):
         ax.set_ylabel("Y")
         ax.set_zlabel("Z")
 
+        plt.title(self.experiment_name.replace("_", " ").capitalize())
+
         if save:
-            save_fig_file = self.save_directory 
-            save_fig_file+= "_predicted_points" if predicted_points else "_traversed_points"
-            plt.savefig(save_fig_file)
+            save_fig_file = self.experiment_name 
+            save_fig_file += "_predicted_points" if predicted_points else "_traversed_points"
+
+            save_fig_path = os.path.join(self.save_directory, save_fig_file + ".png")
+
+            plt.savefig(save_fig_path)
 
         plt.show()
 

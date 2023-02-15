@@ -1,9 +1,11 @@
 import sys
 import copy
 import rospy
+import tf
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs
+import numpy as np
 
 class RobotControl(object):
     def __init__(self, num_move_attempts = 3, attachment_name="tool0",
@@ -35,6 +37,8 @@ class RobotControl(object):
         self.attachment_name = attachment_name
         self.num_move_attempts = num_move_attempts
         self.wait_time = wait_time
+
+        #rospy.init_node("ur5_tf_listener")
 
         rospy.sleep(wait_time)
 
@@ -230,3 +234,58 @@ class RobotControl(object):
 
         if not success:
             raise Exception("Could not remove object " + obj_name + " from scene")
+        
+    def get_total_transform(self):
+        num_tries = 3
+
+        trans = None
+        rot = None
+
+        transformation_matrix = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
+
+        listener = tf.TransformListener()
+
+        for i in range(num_tries):
+            try:
+                (trans, rot) = listener.lookupTransform("/world", "/tool0", rospy.Time(0))
+                break
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.sleep(self.wait_time)
+                continue
+        
+        if trans is None or rot is None:
+            raise Exception("Unable to get transform for robot")
+        
+        return trans, rot
+
+        """transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1
+        transformation_matrix[0][0] = 1"""
+
+        for i in trans:
+            print i
+        
+        print "--------------------------"
+
+        for i in rot:
+            print i
+        
+    def get_current_joint_info(self):
+        pass
+       

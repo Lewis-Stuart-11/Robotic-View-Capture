@@ -4,6 +4,7 @@ import time
 import geometry_msgs
 import json
 import os
+import numpy as np
 
 from trajectory_handler import TrajectoryHandler
 from robot_control import RobotControl
@@ -33,7 +34,7 @@ def convert_list_to_point(point_list, convert_coords=False):
     return new_point
 
 def take_snapshot(current_pos_idx):
-    time.sleep(1.0)
+    return str(current_pos_idx) + ".png"
 
 """
 def move_robot_base(new_base_pos, current_base_pos):
@@ -66,14 +67,21 @@ def calculate_new_base_position(pos_to_move_base, current_base_pos, radius_from_
 
 def generate_objects(robot, args, scene_obj_positions):
 
-    robot.add_sphere_to_scene("plant", scene_obj_positions["main_obj"], args.main_obj_radius, attach=False)
+    scene_obj_positions_cpy = scene_obj_positions.copy()
 
-    robot.add_box_to_scene("camera", scene_obj_positions["start"], args.camera_size, attach=True)
+    robot.add_sphere_to_scene("plant", scene_obj_positions_cpy["main_obj"], args.main_obj_radius, attach=False)
+
+    robot.add_box_to_scene("camera", scene_obj_positions_cpy["start"], args.camera_size, attach=True)
 
     if args.auto_add_obj_stand:
-        stand_height = scene_obj_positions["main_obj"].z - args.main_obj_radius
 
-        stand_position = scene_obj_positions["main_obj"]
+        main_obj_pos_cpy = convert_list_to_point([scene_obj_positions_cpy["main_obj"].x, 
+                                                  scene_obj_positions_cpy["main_obj"].y, 
+                                                  scene_obj_positions_cpy["main_obj"].z])
+
+        stand_height = main_obj_pos_cpy.z - args.main_obj_radius
+
+        stand_position = main_obj_pos_cpy
         stand_position.z = stand_height/2
 
         stand_size = [0.07, 0.07, stand_height]
@@ -101,25 +109,6 @@ def generate_objects(robot, args, scene_obj_positions):
                                             attach=True if "attach" in object.keys() else False)
                 else:
                     raise Exception("Object type " + object["type"] + " is not currently supported")
-
-
-def test(robot, quartonian_handler):
-    origin = convert_list_to_point([0.705882352941, 0.0, 1.0])
-
-    test_poses = [
-        convert_list_to_point([0.5,0.5,1]),
-        convert_list_to_point([-0.5,0.5,1]),
-        convert_list_to_point([-0.5,-0.5,1]),
-        convert_list_to_point([0.5,-0.5,1])
-    ]
-
-    for pose in test_poses:
-        quartonian = quartonian_handler.QuaternionLookRotation(quartonian_handler.SubtractVectors(origin, pose), up)
-
-        success = robot.move_and_orientate_arm(pose.x, pose.y, pose.z,
-                                                quartonian.x, quartonian.y, quartonian.z, quartonian.w)
-        
-        time.sleep(4)
 
 
 def config_parser():
@@ -235,6 +224,8 @@ def save_experiment_in_db(args, db_handler, experiment_name):
 
             db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
                                             args.camera_dist_from_obj_origin, args.rings, args.sectors)
+        else:
+            db_handler.set_current_experiment(experiment_name)
     else:
         db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
                                             args.camera_dist_from_obj_origin, args.rings, args.sectors)
@@ -244,11 +235,34 @@ def save_experiment_in_db(args, db_handler, experiment_name):
 
 def main():
 
+    transform_data = {"frames": []}
+
     args, scene_obj_positions = config_parser()
 
     experiment_name_condensed = args.experiment_name.replace(" ", "_").lower()
 
     experiment_file_name = os.path.join(args.log_dir, experiment_name_condensed)
+
+    print "Experiment: " + experiment_name_condensed
+
+    # Handles all positions that the robot needs to traverse to  
+    trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
+                                           args.max_dist, args.restricted_z, 
+                                           save_directory=experiment_file_name)
+
+    # Calculates all camera view positions in the scene based on where the object is and the number
+    # of required views to be captured
+    trajectory_handler.calculate_sphere_points(scene_obj_positions["main_obj"], 
+                                               args.camera_dist_from_obj_origin, 
+                                               rings=args.rings, sectors=args.sectors)
+
+    print str(len(trajectory_handler.predicted_positions["invalid_positions"])) + " different positions have been evaluated as invalid! "
+
+    # Shows a scatter diagram of the calculated valid and invalid positions in the scene
+    if args.visualise:
+        trajectory_handler.visualise_predicted_valid_points(save=args.save_fig)
+
+    print "Enter anything to continue: "
 
     db_handler = None
 
@@ -263,25 +277,6 @@ def main():
 
     # Handles all vectors and quaronian logic for the robot
     quartonian_handler = QuartonianHandler()
-    
-    # Handles all positions that the robot needs to traverse to  
-    trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
-                                           args.max_dist, args.restricted_z, 
-                                           save_directory=experiment_file_name)
-
-    # Calculates all camera view positions in the scene based on where the object is and the number
-    # of required views to be captured
-    trajectory_handler.calculate_sphere_points(scene_obj_positions["main_obj"], 
-                                               args.camera_dist_from_obj_origin, 
-                                               rings=args.rings, sectors=args.sectors, swap_y=True)
-
-    print str(len(trajectory_handler.predicted_positions["invalid_positions"])) + " different positions have been evaluated as invalid! "
-
-    # Shows a scatter diagram of the calculated valid and invalid positions in the scene
-    if args.visualise:
-        trajectory_handler.visualise_predicted_valid_points(save=args.save_fig)
-
-    print "Enter anything to continue: "
 
     continue_process = raw_input()
 
@@ -316,7 +311,7 @@ def main():
         if args.save_to_db and args.continue_experiment:
             current_point = db_handler.get_point_with_num(current_pos_idx)
 
-            if current_point is not None and current_point[2] and current_point[3]:
+            if current_point is not None and current_point[2] == 1 and current_point[3] == 1:
                 print "Point has already been traveresed previously, skipping..."
 
                 current_pos_idx, current_pos = trajectory_handler.get_next_pos()
@@ -339,8 +334,18 @@ def main():
 
         if success:
             print "Successfully moved arm to new position"
-            take_snapshot(current_pos_idx)
+            file_name = take_snapshot(current_pos_idx)
             print "Snapshot taken"
+
+            translation, rotation = robot.get_total_transform()
+            trans_matrix = quartonian_handler.get_translation_matrix_from_transform(translation, rotation)
+            
+            view_data = {"file_path": file_name,
+                         "transformation_matrix": np.array2string(trans_matrix, precision=14, seperator=",")}
+            
+            transform_data["frames"].append(view_data)
+
+            return
                 
         else:
             print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
@@ -353,6 +358,8 @@ def main():
         trajectory_handler.pos_verdict(current_pos_idx, success)
 
         current_pos_idx, current_pos = trajectory_handler.get_next_pos()
+
+        time.sleep(1.0)
 
     print trajectory_handler.traversed_positions["invalid_positions"]
 

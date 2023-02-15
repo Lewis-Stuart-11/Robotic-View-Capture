@@ -1,5 +1,6 @@
 from math import sqrt
 import geometry_msgs
+import numpy as np
 
 class QuartonianHandler():
 
@@ -97,7 +98,61 @@ class QuartonianHandler():
         quaternion.z = 0.5 * num5
         quaternion.w = (m01 - m10) * num2
         return quaternion
+    
 
+    def convert_quart_to_rotation_matrix(self, q):
+
+        qx = float(q[0])
+        qy = float(q[1])
+        qz = float(q[2])
+        qw = float(q[3])
+
+        sqw = qw*qw
+        sqx = qx*qx
+        sqy = qy*qy
+        sqz = qz*qz
+
+        invs = 1 / (sqx + sqy + sqz + sqw)
+        m00 = ( sqx - sqy - sqz + sqw)*invs 
+        m11 = (-sqx + sqy - sqz + sqw)*invs 
+        m22 = (-sqx - sqy + sqz + sqw)*invs 
+            
+        tmp1 = qx*qy
+        tmp2 = qz*qw
+        m10 = 2.0 * (tmp1 + tmp2)*invs 
+        m01 = 2.0 * (tmp1 - tmp2)*invs 
+            
+        tmp1 = qx*qz
+        tmp2 = qy*qw
+        m20 = 2.0 * (tmp1 - tmp2)*invs 
+        m02 = 2.0 * (tmp1 + tmp2)*invs 
+        tmp1 = qy*qz
+        tmp2 = qx*qw
+        m21 = 2.0 * (tmp1 + tmp2)*invs 
+        m12 = 2.0 * (tmp1 - tmp2)*invs 
+        
+        r = np.array([
+            [m00, m01, m02],
+            [m10, m11, m12],
+            [m20, m21, m22],
+        ])
+
+        return r
+
+
+    def get_translation_matrix_from_transform(self, trans, rot):
+        
+        transformation_matrix = np.identity(4)
+
+        rotation_matrix = self.convert_quart_to_rotation_matrix(rot)
+
+        for i in range(3):
+            for j in range(3):
+                transformation_matrix[i][j] = rotation_matrix[i][j]
+
+            transformation_matrix[i][3] = trans[i]
+        
+        return transformation_matrix
 
 """
 def quaternion_from_euler(ai, aj, ak, axes='sxyz'):

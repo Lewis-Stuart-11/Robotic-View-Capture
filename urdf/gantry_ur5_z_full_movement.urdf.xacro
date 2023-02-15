@@ -16,8 +16,8 @@
 
   <xacro:property name="collision_offset" value="0.005"/>
   
-  <xacro:property name="movement_restriction_x" value="0.0"/>
-  <xacro:property name="movement_restriction_y" value="0.0"/>
+  <xacro:property name="movement_restriction_x" value="0.5"/>
+  <xacro:property name="movement_restriction_y" value="0.5"/>
 
   
   <xacro:macro name="piller" params="num x y">

@@ -13,6 +13,9 @@ roslaunch ur5_moveit_config moveit_rviz.launch
 View Capture Script:
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/main_config.txt
 
+Show Results Script:
+rosrun view_capture generate_results.py
+
 Change Directory:
 cd ~/ws_moveit/src/view_capture
 
@@ -34,70 +37,96 @@ roslaunch ur5_circular_gantry_moveit_config demo.launch
 Experiments:
 
 # Pedestal
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal_0.5.txt
+roslaunch ur5_base_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal/pedestal_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal/pedestal_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal/pedestal_0.5.txt
 
 
 # Gantry with x,y,z (1.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_with_z_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.5_0.5.txt
 
 # Gantry with x,y,z (1.0 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_with_z_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.0_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.0_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_1.0_0.5.txt
 
 # Gantry with x,y,z (0.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_with_z_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_0.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_0.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xyz/gantry_xyz_0.5_0.5.txt
 
 
 # Gantry with x,y (1.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_x_y_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.5_0.5.txt
 
 # Gantry with x,y (1.0 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_x_y_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.0_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.0_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_1.0_0.5.txt
 
 # Gantry with x,y (0.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_gantry_x_y_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_0.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_0.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_xy/gantry_xy_0.5_0.5.txt
 
 
-# Gantry with y (1.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+# Gantry with y (1.5 y)
+roslaunch ur5_gantry_y_moveit_config demo.launch
 
-# Gantry with y (1.0 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.5_0.5.txt
 
-# Gantry with y (0.5 x&y)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+# Gantry with y (1.0 y)
+roslaunch ur5_gantry_y_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.0_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.0_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_1.0_0.5.txt
+
+# Gantry with y (0.5 y)
+roslaunch ur5_gantry_y_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_0.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_0.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_y/gantry_y_0.5_0.5.txt
 
 
 # Circular Gantry (1.75 circular radius)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_circular_gantry_175_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.5.txt
 
 # Circular Gantry (1.5 circular radius)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_circular_gantry_15_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.5.txt
 
 # Circular Gantry (1.25 circular radius)
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.2.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.35.txt
-rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/gantry_0.5.txt
+roslaunch ur5_circular_gantry_125_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.5.txt
