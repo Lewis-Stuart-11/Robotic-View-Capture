@@ -46,11 +46,12 @@ class ImgCaptureDatabaseHandler():
     def set_current_experiment(self, experiment_name):
         self.current_experiment = self.get_experiment_with_name(experiment_name)
 
-    def create_new_experiment(self, experiment_name, obj_pos, obj_radius, camera_dist, rings, sectors):
+    def create_new_experiment(self, experiment_name, obj_pos, obj_size, camera_dist, rings, sectors):
 
         obj_pos_str = " ".join(str(coord) for coord in obj_pos)
+        obj_size_str = " ".join(str(coord) for coord in obj_size)
 
-        experiment = (experiment_name, obj_pos_str, str(obj_radius),
+        experiment = (experiment_name, obj_pos_str, obj_size_str,
                       str(camera_dist), str(rings), str(sectors))
 
         self.cur.executemany("""INSERT INTO experiments (experiment_name, obj_pos, obj_radius, 

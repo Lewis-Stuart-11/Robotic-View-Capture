@@ -33,11 +33,16 @@ roslaunch ur5_gantry_x_y_moveit_config demo.launch
 roslaunch ur5_gantry_y_moveit_config demo.launch
 roslaunch ur5_circular_gantry_moveit_config demo.launch
 
+Add Robot to Gazebo:
+rosrun gazebo_ros spawn_model -file `rospack find ur5_upgrades`/descriptions/pedestal_ur5.urdf.xacro -urdf -x 0 -y 0 -z 0 -model pedestal_ur5
+
 
 Experiments:
 
 # Pedestal
 roslaunch ur5_base_moveit_config demo.launch
+roslaunch ur5_base_moveit_config moveit_planning_execution.launch sim:=true
+
 
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal/pedestal_0.2.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/pedestal/pedestal_0.35.txt
@@ -116,6 +121,8 @@ roslaunch ur5_circular_gantry_175_moveit_config demo.launch
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.2.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.35.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_0.5.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_1.0.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.75_1.25.txt
 
 # Circular Gantry (1.5 circular radius)
 roslaunch ur5_circular_gantry_15_moveit_config demo.launch
@@ -123,6 +130,8 @@ roslaunch ur5_circular_gantry_15_moveit_config demo.launch
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.2.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.35.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_0.5.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_1.0.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.5_1.25.txt
 
 # Circular Gantry (1.25 circular radius)
 roslaunch ur5_circular_gantry_125_moveit_config demo.launch
@@ -130,3 +139,14 @@ roslaunch ur5_circular_gantry_125_moveit_config demo.launch
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.2.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.35.txt
 rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_0.5.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_1.0.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_gantry/circular_gantry_1.25_1.25.txt
+
+# Dynamic Circular Gantry (1.25 circular radius)
+roslaunch ur5_circular_dynamic_moveit_config demo.launch
+
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_dynamic_gantry/circular_dynamic_gantry_0.2.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_dynamic_gantry/circular_dynamic_gantry_0.35.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_dynamic_gantry/circular_dynamic_gantry_0.5.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_dynamic_gantry/circular_dynamic_gantry_0.75.txt
+rosrun view_capture run_view_capture.py --config ~/ws_moveit/src/view_capture/configs/circular_dynamic_gantry/circular_dynamic_gantry_1.0.txt

@@ -69,7 +69,9 @@ def generate_objects(robot, args, scene_obj_positions):
 
     scene_obj_positions_cpy = scene_obj_positions.copy()
 
-    robot.add_sphere_to_scene("plant", scene_obj_positions_cpy["main_obj"], args.main_obj_radius, attach=False)
+    #robot.add_sphere_to_scene("plant", scene_obj_positions_cpy["main_obj"], args.main_obj_radius, attach=False)
+
+    robot.add_box_to_scene("plant", scene_obj_positions_cpy["main_obj"], args.main_obj_size, attach=False)
 
     robot.add_box_to_scene("camera", scene_obj_positions_cpy["start"], args.camera_size, attach=True)
 
@@ -79,7 +81,10 @@ def generate_objects(robot, args, scene_obj_positions):
                                                   scene_obj_positions_cpy["main_obj"].y, 
                                                   scene_obj_positions_cpy["main_obj"].z])
 
-        stand_height = main_obj_pos_cpy.z - args.main_obj_radius
+        print main_obj_pos_cpy.z
+        print args.main_obj_size[2]
+
+        stand_height = main_obj_pos_cpy.z #- args.main_obj_size[2] #- args.main_obj_radius
 
         stand_position = main_obj_pos_cpy
         stand_position.z = stand_height/2
@@ -134,8 +139,10 @@ def config_parser():
     # Scene Objects
     parser.add_argument("--main_obj_position", type=float, action="append", default=[], required=True,
                         help="The object position in relation to the base position (cm)")
-    parser.add_argument("--main_obj_radius", type=float, required=True,
-                        help="The known radius of the object (cm)")
+    #parser.add_argument("--main_obj_radius", type=float, required=True,
+    #                    help="The known radius of the object (cm)")
+    parser.add_argument("--main_obj_size", type=float,  action="append", default=[], required=True,
+                        help="The estimated size of the object in length (x), width (y) and height (z)")
     parser.add_argument("--starting_position", type=float, action="append", default=[], required=True,
                         help="The object starting position in relation to the base position (cm)")
     parser.add_argument("--camera_size", type=float, action="append", default=[], required=True,
@@ -185,8 +192,8 @@ def config_parser():
     wc_to_dc = lambda x: float(x) / float(args.max_reach) 
 
     # Checks that plant radius is not larger than the camera capture radius 
-    if args.camera_dist_from_obj_origin <= args.main_obj_radius:
-        raise Exception("Distance of the camera to the plant origin must be bigger than the max plant radius (avoids collision)")
+    #if args.camera_dist_from_obj_origin <= args.main_obj_radius:
+    #    raise Exception("Distance of the camera to the plant origin must be bigger than the max plant radius (avoids collision)")
 
     # Number of move attempts must be larger than 0
     if args.num_move_attempts <= 0:
@@ -202,7 +209,8 @@ def config_parser():
 
     # Values are converted into the correct coordinate system
     args.camera_size = [wc_to_dc(camera_dim) for camera_dim in args.camera_size]
-    args.main_obj_radius = wc_to_dc(args.main_obj_radius)
+    args.main_obj_size = [wc_to_dc(obj_dim) for obj_dim in args.main_obj_size]
+    #args.main_obj_radius = wc_to_dc(args.main_obj_radius)
     args.camera_dist_from_obj_origin = wc_to_dc(args.camera_dist_from_obj_origin)
 
     return args, scene_obj_positions
@@ -222,15 +230,29 @@ def save_experiment_in_db(args, db_handler, experiment_name):
             else:
                 db_handler.remove_experiment_with_name(experiment_name)
 
-            db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
+            db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_size, 
                                             args.camera_dist_from_obj_origin, args.rings, args.sectors)
         else:
             db_handler.set_current_experiment(experiment_name)
     else:
-        db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_radius, 
+        db_handler.create_new_experiment(experiment_name, args.main_obj_position, args.main_obj_size, 
                                             args.camera_dist_from_obj_origin, args.rings, args.sectors)
 
     return db_handler
+
+
+def capture_view(view_id, robot, quartonian_handler):
+    print "Successfully moved arm to new position"
+    file_name = take_snapshot(view_id)
+    print "View Captured"
+
+    translation, rotation = robot.get_total_transform()
+    trans_matrix = quartonian_handler.get_translation_matrix_from_transform(translation, rotation)
+    
+    view_data = {"file_path": file_name,
+                    "transformation_matrix": np.array2string(trans_matrix, precision=14, separator=",")}
+    
+    return view_data
 
 
 def main():
@@ -318,13 +340,6 @@ def main():
 
                 continue
 
-        """if args.dynamic_base:
-            
-            scene_obj_positions["current_base"] = calculate_new_base_position(current_pos, 
-                                                           scene_obj_positions["current_base"], 
-                                                           args.camera_dist_from_obj_origin, 
-                                                           quartonian_handler)"""
-
         print "Attempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z)
 
         quartonian = quartonian_handler.QuaternionLookRotation(quartonian_handler.SubtractVectors(scene_obj_positions["main_obj"], current_pos), up)
@@ -333,20 +348,12 @@ def main():
                                                 quartonian.x, quartonian.y, quartonian.z, quartonian.w)
 
         if success:
-            print "Successfully moved arm to new position"
-            file_name = take_snapshot(current_pos_idx)
-            print "Snapshot taken"
-
-            translation, rotation = robot.get_total_transform()
-            trans_matrix = quartonian_handler.get_translation_matrix_from_transform(translation, rotation)
-            
-            view_data = {"file_path": file_name,
-                         "transformation_matrix": np.array2string(trans_matrix, precision=14, seperator=",")}
+            view_data = capture_view(current_pos_idx, robot, quartonian_handler)
             
             transform_data["frames"].append(view_data)
+            
+            joint_info = robot.get_current_joint_info()
 
-            return
-                
         else:
             print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
         
@@ -359,7 +366,7 @@ def main():
 
         current_pos_idx, current_pos = trajectory_handler.get_next_pos()
 
-        time.sleep(1.0)
+        time.sleep(0.5)
 
     print trajectory_handler.traversed_positions["invalid_positions"]
 
@@ -378,11 +385,9 @@ def main():
                                                    quartonian.x, quartonian.y, quartonian.z, quartonian.w)
 
             if success:
-                print "Successfully moved arm to new position"
-                take_snapshot(current_pos_idx)
-                print "Snapshot taken"
-
-                trajectory_handler.pos_verdict(current_pos_idx, success)
+                view_data = capture_view(current_pos_idx, robot, quartonian_handler)
+            
+                transform_data["frames"].append(view_data)
 
                 if args.save_to_db:
                     db_handler.update_point_status(current_pos_idx, success)

@@ -7,9 +7,11 @@ import moveit_msgs.msg
 import geometry_msgs
 import numpy as np
 
+from sensor_msgs.msg import JointState
+
 class RobotControl(object):
     def __init__(self, num_move_attempts = 3, attachment_name="tool0",
-                        wait_time=1):
+                        wait_time=0.75):
         super(RobotControl, self).__init__()
 
         moveit_commander.roscpp_initialize(sys.argv)
@@ -38,7 +40,9 @@ class RobotControl(object):
         self.num_move_attempts = num_move_attempts
         self.wait_time = wait_time
 
-        #rospy.init_node("ur5_tf_listener")
+        self.current_joint_info = None
+
+        rospy.Subscriber("joint_states", JointState, self.update_joint_state)
 
         rospy.sleep(wait_time)
 
@@ -56,6 +60,9 @@ class RobotControl(object):
 
     def set_planning_time(self, planning_time):
         self.move_group.set_planning_time(planning_time)
+
+    def update_joint_state(self, data):
+        self.current_joint_info = data
 
     def move_arm(self, point_x, point_y, point_z, reset_orientation=True):
         pose = geometry_msgs.msg.Pose()
@@ -241,8 +248,6 @@ class RobotControl(object):
         trans = None
         rot = None
 
-        transformation_matrix = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
-
         listener = tf.TransformListener()
 
         for i in range(num_tries):
@@ -257,35 +262,23 @@ class RobotControl(object):
             raise Exception("Unable to get transform for robot")
         
         return trans, rot
-
-        """transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1
-        transformation_matrix[0][0] = 1"""
-
-        for i in trans:
-            print i
-        
-        print "--------------------------"
-
-        for i in rot:
-            print i
         
     def get_current_joint_info(self):
-        pass
+        current_time = rospy.Time.now().to_sec()
+        
+        current_joint_state = None
+
+        for i in range(3):
+            joint_time = float(self.current_joint_info.header.stamp.to_time())
+
+            if current_time - float(joint_time) > 0:
+                rospy.sleep(self.wait_time)
+            else:
+                current_joint_state = self.current_joint_info
+                break
+        
+        if current_joint_state is None:
+            raise Exception("Unable to get joint state for robot")
+
+        return current_joint_state
        
