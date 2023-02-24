@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+  <robot xmlns:xacro="http://wiki.ros.org/xacro" name="pedestal_ur5">
+  
+  <xacro:property name="pedestal_base_height" value="0.845"/>
+  <xacro:property name="pedestal_base_width" value="0.07"/>
+  
+  <xacro:include filename="$(find ur_gazebo)/urdf/ur_macro.xacro"/>
+  <xacro:include filename="$(find ur_description)/urdf/inc/ur5_macro.xacro"/>
+
+  <link name="world"/>
+
+  <link name="pedestal">
+    <inertial>
+      <origin xyz="0 0 ${pedestal_base_height/2}" rpy="0 0 0"/>
+      <mass value="20"/>
+      <inertia ixx="200" ixy="200" ixz="200" iyy="200" iyz="200" izz="200"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://view_capture/meshes/b75_pedestal.dae"/>
+      </geometry>
+      <material name="Gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${pedestal_base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${pedestal_base_width} ${pedestal_base_width} ${pedestal_base_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <xacro:ur5_robot prefix="" />
+
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link="pedestal" />
+    <origin xyz="0 0 0" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="pedestal" />
+    <child link="base_link" />
+    <origin xyz="0 0 ${pedestal_base_height}" rpy="0.0 0.0 0.0"/>
+  </joint>
+	
+</robot>
