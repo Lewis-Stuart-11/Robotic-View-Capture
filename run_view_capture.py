@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import time
 import geometry_msgs
@@ -81,8 +81,8 @@ def generate_objects(robot, args, scene_obj_positions):
                                                   scene_obj_positions_cpy["main_obj"].y, 
                                                   scene_obj_positions_cpy["main_obj"].z])
 
-        print main_obj_pos_cpy.z
-        print args.main_obj_size[2]
+        print(main_obj_pos_cpy.z)
+        print(args.main_obj_size[2])
 
         stand_height = main_obj_pos_cpy.z #- args.main_obj_size[2] #- args.main_obj_radius
 
@@ -242,9 +242,9 @@ def save_experiment_in_db(args, db_handler, experiment_name):
 
 
 def capture_view(view_id, robot, quartonian_handler):
-    print "Successfully moved arm to new position"
+    print("Successfully moved arm to new position")
     file_name = take_snapshot(view_id)
-    print "View Captured"
+    print("View Captured")
 
     translation, rotation = robot.get_total_transform()
     trans_matrix = quartonian_handler.get_translation_matrix_from_transform(translation, rotation)
@@ -265,7 +265,7 @@ def main():
 
     experiment_file_name = os.path.join(args.log_dir, experiment_name_condensed)
 
-    print "Experiment: " + experiment_name_condensed
+    print("Experiment: " + experiment_name_condensed)
 
     # Handles all positions that the robot needs to traverse to  
     trajectory_handler = TrajectoryHandler(args.restricted_x, args.restricted_y, 
@@ -278,13 +278,13 @@ def main():
                                                args.camera_dist_from_obj_origin, 
                                                rings=args.rings, sectors=args.sectors)
 
-    print str(len(trajectory_handler.predicted_positions["invalid_positions"])) + " different positions have been evaluated as invalid! "
+    print(str(len(trajectory_handler.predicted_positions["invalid_positions"])) + " different positions have been evaluated as invalid! ")
 
     # Shows a scatter diagram of the calculated valid and invalid positions in the scene
     if args.visualise:
         trajectory_handler.visualise_predicted_valid_points(save=args.save_fig)
 
-    print "Enter anything to continue: "
+    print("Enter anything to continue: ")
 
     db_handler = None
 
@@ -300,7 +300,7 @@ def main():
     # Handles all vectors and quaronian logic for the robot
     quartonian_handler = QuartonianHandler()
 
-    continue_process = raw_input()
+    continue_process = input()
 
     if continue_process == "exit":
         exit()
@@ -315,32 +315,32 @@ def main():
     #robot.move_group.set_planner_id("RRTConnectkConfigDefault")
 
     if success:
-        print "Moved robot to starting position, adding scene objects"
+        print("Moved robot to starting position, adding scene objects")
     else:
         raise Exception("Failed to move robot to starting position")
 
     # Generates all the required objects in the scene to ensure no collisions occur
     generate_objects(robot, args, scene_obj_positions)
 
-    print "Beginning capturing..."
+    print("Beginning capturing...")
 
     # Gets the current position for the robot to traverse to and continues to loop until no more 
     # positions in the queue
     current_pos_idx, current_pos = trajectory_handler.get_next_pos()
     while current_pos != None:
-        print str(current_pos_idx)
+        print(str(current_pos_idx))
 
         if args.save_to_db and args.continue_experiment:
             current_point = db_handler.get_point_with_num(current_pos_idx)
 
             if current_point is not None and current_point[2] == 1 and current_point[3] == 1:
-                print "Point has already been traveresed previously, skipping..."
+                print("Point has already been traveresed previously, skipping...")
 
                 current_pos_idx, current_pos = trajectory_handler.get_next_pos()
 
                 continue
 
-        print "Attempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z)
+        print("Attempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z))
 
         quartonian = quartonian_handler.QuaternionLookRotation(quartonian_handler.SubtractVectors(scene_obj_positions["main_obj"], current_pos), up)
 
@@ -355,12 +355,12 @@ def main():
             joint_info = robot.get_current_joint_info()
 
         else:
-            print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
+            print ("Unable to move arm to position after " + str(args.num_move_attempts) + " attempts")
         
         if args.save_to_db:
             db_handler.update_point_status(current_pos_idx, success)
 
-        print ""
+        print()
 
         trajectory_handler.pos_verdict(current_pos_idx, success)
 
@@ -368,16 +368,16 @@ def main():
 
         time.sleep(0.5)
 
-    print trajectory_handler.traversed_positions["invalid_positions"]
+    print(trajectory_handler.traversed_positions["invalid_positions"])
 
     if args.retry_failed_pos:
-        print "Retrying previously failed positions"
-        print ""
+        print("Retrying previously failed positions")
+        print()
 
         current_pos_idx, current_pos = trajectory_handler.get_failed_pos()
         while current_pos != None:
-            print str(current_pos_idx)
-            print "Reattempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z)
+            print(str(current_pos_idx))
+            print("Reattempting to move to position: " + str(current_pos.x) + ", " + str(current_pos.y) + ", " + str(current_pos.z))
 
             quartonian = quartonian_handler.QuaternionLookRotation(quartonian_handler.SubtractVectors(scene_obj_positions["main_obj"], current_pos), up)
 
@@ -392,9 +392,9 @@ def main():
                 if args.save_to_db:
                     db_handler.update_point_status(current_pos_idx, success)
             else:
-                print "Unable to move arm to position after " + str(args.num_move_attempts) + " attempts"
+                print("Unable to move arm to position after " + str(args.num_move_attempts) + " attempts")
 
-            print ""
+            print()
 
             current_pos_idx, current_pos = trajectory_handler.get_failed_pos()
 
