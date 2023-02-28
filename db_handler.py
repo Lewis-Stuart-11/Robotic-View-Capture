@@ -8,6 +8,8 @@ class ImgCaptureDatabaseHandler():
 
         create_database = not os.path.isfile(self.database_file)
 
+        print(self.database_file)
+
         self.conn = sq.connect(self.database_file)
         self.cur = self.conn.cursor()
 
@@ -48,7 +50,7 @@ class ImgCaptureDatabaseHandler():
 
     def create_new_experiment(self, experiment_name, obj_pos, obj_size, camera_dist, rings, sectors):
 
-        obj_pos_str = " ".join(str(coord) for coord in obj_pos)
+        obj_pos_str = str(obj_pos.x) + " " + str(obj_pos.y) + " " + str(obj_pos.z)
         obj_size_str = " ".join(str(coord) for coord in obj_size)
 
         experiment = (experiment_name, obj_pos_str, obj_size_str,
